@@ -1,0 +1,251 @@
+syntax = "proto3";
+
+package k8s_job_scheduler;
+
+
+// 周期任务接口
+service cron_job_api {
+  // 周期任务列表
+  // @uri: /api/cron_job/lists
+  rpc Lists (TODO) returns (TODO);
+  // 周期任务信息
+  // @uri: /api/cron_job/describe/:job_id
+  rpc Describe (TODO) returns (TODO);
+  // 创建周期任务列表
+  // @uri: /api/cron_job/create
+  rpc Create (TODO) returns (TODO);
+  // 更新周期任务列表
+  // @uri: /api/cron_job/update
+  rpc Update (TODO) returns (TODO);
+  // 删除周期任务列表
+  // @uri: /api/cron_job/delete/:job_id
+  rpc Delete (TODO) returns (TODO);
+}
+
+message TODO {
+
+}
+
+message ListRequest {
+  // 当前页数
+  int64 page_num = 1;
+  // 每页数量
+  int64 page_size = 2;
+}
+// 分页信息
+message ListOnceJobResponse {
+  // 状态码
+  int64 code = 1;
+  // 失败原因
+  string cause = 2;
+  // 数据
+  Data data = 3;
+}
+
+message Data {
+  // 总数
+  string total = 1;
+  // 当前页数
+  int64 page_num = 2;
+  // 每页数量
+  int64 page_size = 3;
+  // 数据
+  repeated OnceJob data = 6;
+}
+
+message OnceJob {
+  // id
+  int64 id = 1;
+  // job_id
+  string job_id = 2;
+  // 任务名称
+  string job_name =4;
+  // 执行时间
+  int64 job_exec_time = 5;
+  // 命名空间
+  string namespace = 6;
+  // metadata
+  string metadata = 7;
+  // 镜像
+  string image =8;
+  // 命令
+  string command =9;
+  // 超时时间
+  int64 timeout = 10;
+  // job 状态
+  int64 job_status = 11;
+  // 执行信息
+  string job_exec_information = 12;
+  // 创建次数
+  int64 job_times = 13;
+  // 成功次数
+  int64 job_success_times = 14;
+  // 创建时间
+  int64 create_time = 15;
+  // 更新时间
+  int64 update_time = 16;
+}
+
+message CreateRequest {
+  // 任务名称
+  string job_name = 1;
+  // 执行时间
+  string job_exec_time = 2;
+  // 命名空间
+  string namespace = 3;
+  // 镜像名称
+  string image = 5;
+  // 执行命令 逗号分隔命令 例: 'echo,k8s jobs !!!'
+  string command = 6;
+  // 执行超时时间 指job执行时间
+  int64 timeout = 7;
+  // labels、annotations: 注解与labels
+  // parallelism: 并行数 默认:1
+  // completions: 执行成功次数 默认:1
+  // restart_policy: 重启策略: 默认Never
+  // active_deadline_seconds: 执行超时时间 默认:5分钟
+  // backoff_limit: 重试次数 默认:1
+  // ttl_seconds_after_finished: job 结束回收时间 默认:5分钟
+  // envs: 环境变量 json
+  // log_collect: 是否采集日志 默认:false
+  // args: 执行参数 逗号分隔
+  // callback_url: job执行状态回调地址
+  map<string, string> metadata = 4;
+}
+
+message CreateResponse {
+  // 状态码
+  int64 code = 1;
+  // 失败原因
+  string cause = 2;
+  // 失败信息
+  string error_msg = 3;
+  // 数据
+  Create data = 4;
+}
+message Create {
+  // 任务id
+  string job_id = 1;
+}
+
+message UpdateRequest {
+  // 任务id
+  string job_id = 1;
+  // 任务名称
+  string job_name = 2;
+  // 执行时间
+  string job_exec_time = 3;
+  // 命名空间
+  string namespace = 4;
+  // 镜像名称
+  string image = 5;
+  // 执行命令 逗号分隔命令 例: 'echo,k8s jobs !!!'
+  string command = 6;
+  // 执行超时时间 指job执行时间
+  int64 timeout = 7;
+  // labels、annotations: 注解与labels
+  // parallelism: 并行数 默认:1
+  // completions: 执行成功次数 默认:1
+  // restart_policy: 重启策略: 默认Never
+  // active_deadline_seconds: 执行超时时间 默认:5分钟
+  // backoff_limit: 重试次数 默认:1
+  // ttl_seconds_after_finished: job 结束回收时间 默认:5分钟
+  // envs: 环境变量 json
+  // log_collect: 是否采集日志 默认:false
+  // args: 执行参数 逗号分隔
+  // callback_url: job执行状态回调地址
+  map<string, string> metadata = 8;
+}
+
+message UpdateResponse {
+  // 状态码
+  int64 code = 1;
+  // 失败原因
+  string cause = 2;
+  // 失败信息
+  string error_msg = 3;
+  // 数据
+  string data = 4;
+}
+
+message Update {
+  // 任务id
+  string job_id = 1;
+}
+
+message DeleteRequest {
+  // 任务id
+  string job_id = 1;
+}
+
+message DeleteResponse {
+  // 状态码
+  int64 code = 1;
+  // 失败原因
+  string cause = 2;
+  // 失败信息
+  string error_msg = 3;
+  // 数据
+  Create data = 4;
+}
+
+message Delete {}
+// 单次任务接口
+service a_once_job {
+  // 创建任务
+  // 创建即刻或定时Job, 任务存储延迟队列中待时间到达下发任务.
+  // job和pod labels中有Job_from、Job_id、job_name、job_type等字段标注.
+  // 当pod通知运行完成或者失败后, 带有采集标识的会采集容器运行日志并回传, 失败默认采集.
+  // 当配置回调地址, job 成功及失败会有回调通知.
+  // 事件当中Job创建、完成、失败或者删除等等会通知到服务端, 更新Job信息.
+  // @uri: /api/once_job/create
+  rpc Create (CreateRequest) returns (CreateResponse);
+  // 更新任务
+  // k8s job支持更新的数据有限, 非使用update接口.
+  // 更新流程先删除旧任务且重新分发job任务.
+  // 注意: 当任务处于提交未创建阶段, 无法删除.
+  // @uri: /api/once_job/update
+  rpc Update (UpdateRequest) returns (UpdateResponse);
+  // 删除任务
+  // 注意: 当任务处于提交未创建阶段, 无法删除.
+  // @uri: /api/once_job/delete/:job_id
+  rpc Delete (DeleteRequest) returns (DeleteResponse);
+  // 任务列表
+  // 查看当前的单次任务.
+  // @uri: /api/once_job/lists
+  rpc List (ListRequest) returns (ListOnceJobResponse);
+}
+
+
+// 任务日志接口
+service job_logs {
+  // 任务运行日志
+  // 查询任务运行日志.
+  // @uri: /api/job_logs/:job_id
+  rpc runlogs (LogRequest) returns (LogResponse);
+}
+// 请求
+message LogRequest {
+  // 任务id
+  string job_id = 1;
+}
+// 响应
+message LogResponse {
+  // 状态码
+  int64 code = 1;
+  // 数据
+  repeated Log  data = 2;
+  // 失败原因
+  string cause = 3;
+}
+
+message Log {
+  // id
+  int64 id = 1;
+  // pod名称
+  string pod_name = 2;
+  // 运行日志
+  string run_logs = 3;
+  // 创建时间
+  int64  create_time = 4;
+}

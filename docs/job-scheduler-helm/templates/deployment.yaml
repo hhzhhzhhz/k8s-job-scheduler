@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+    spec:
+      serviceAccount: {{ .Values.serviceAccountName }}
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      containers:
+        - env:
+          {{- range $key, $val := .Values.env }}
+          - name: {{ $key }}
+            value: {{ $val }}
+          {{- end }}
+          volumeMounts:
+            - name: {{ .Values.name }}-configmap
+              mountPath: /usr/local/etc/
+          name: {{ .Values.name }}
+          command:
+          {{- range $key, $val := .Values.StartCommand }}
+          -  {{ $val }}
+          {{- end }}
+          image: {{ .Values.image.repository }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+      volumes:
+        - name: {{ .Values.name }}-configmap
+          configMap:
+            name: {{ .Values.name }}-configmap

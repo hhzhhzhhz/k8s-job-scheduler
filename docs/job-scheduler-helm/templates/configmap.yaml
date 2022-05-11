@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-configmap
+  namespace: {{ .Values.namespace }}
+data:
+  config.properties:
+    {{ .Files.Get "config/config.properties" | quote }}
+#data:
+#  app.properties:
+#    path = "/config.properties"
+#    data = {{ .Files.Get "config/config.properties" | b64enc | quote }}

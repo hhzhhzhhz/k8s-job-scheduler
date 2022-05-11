@@ -1,0 +1,19 @@
+image:
+  repository: 783383650/job-scheduler:latest
+  pullPolicy: Always
+
+name: &name k8s-job-scheduler
+namespace: &namespace default
+serviceAccountName: *name
+
+replicaCount: 1
+
+service:
+  type: NodePort
+  ports: [ 65532, 7424 ]
+
+
+
+StartCommand: ["./docker-entrypoint.sh", "start_exec"]
+#StartCommand: ["./docker-entrypoint.sh", "start_server"]
+#StartCommand: ["tail", "-f", "/var/log/alternatives.log"]

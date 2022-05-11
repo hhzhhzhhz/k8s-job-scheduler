@@ -1,0 +1,9 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Values.serviceAccountName }}-cr
+rules:
+  - apiGroups: ["", "batch", "coordination.k8s.io", "leases"]
+    resources: ["namespaces", "cronjobs", "jobs", "pods"]
+    verbs: ["get", "list", "watch", "create", "update", "delete", "exec"]
+

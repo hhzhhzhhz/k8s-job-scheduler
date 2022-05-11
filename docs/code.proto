@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package k8s_job_scheduler;
+
+// 自定义状态码
+enum __Code {
+    // 无效
+    Zero = 0;
+    // 无效参数
+    InvalidParameter = 100;
+    // job_id 为空
+    JobIdError = 101;
+    // body 读取错误
+    BodyReadError = 102;
+    // 解码错误
+    BodyDecodeError = 103;
+    // job 验证错误
+    VerifyJobError = 104;
+    // 数据已存在
+    AlreadyExistsError = 105;
+    // 服务正在关闭
+    ServerClosedError = 106;
+    // 转发错误
+    ForwarderUrlError = 107;
+    // 推送错误
+    PublishError = 251;
+    // 生成job 错误
+    GenJobError = 252;
+    // 删除job 超时
+    DeleteJobTimeoutError = 253;
+    // job 提交错误
+    JobSubmittedError = 254;
+    // job 删除错误
+    DeleteJobError = 255;
+}
