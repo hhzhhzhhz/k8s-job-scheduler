@@ -139,6 +139,7 @@ func (e *Excellent) podEvent(event *apiserver.Event) {
 	// TODO 该事件后采集不到完整容器日志
 	if phase == corev1.PodFailed {
 		e.collect.FailureLog(pod, wi)
+		//e.collect.RunLog(wi)
 	}
 	// 容器运行日志
 	_, ok := pod.Labels[utils.LogCollect]

@@ -151,7 +151,6 @@ func (r *Recipient) handlerCron(ctx context.Context, msg *entity.JobExecStatusMe
 	}
 	jobId := msg.JobId
 	state := msg.JobState
-	jobName := msg.JobName
 	switch state {
 	case entity.CreateSuccess, entity.DeleteSuccess:
 		if state != entity.CreateSuccess {
@@ -162,7 +161,6 @@ func (r *Recipient) handlerCron(ctx context.Context, msg *entity.JobExecStatusMe
 		}
 		return r.UpdateCronJobState(ctx, &entity.JobStatus{
 			JobId:      jobId,
-			JobName:    jobName,
 			JobState:   state,
 			UpdateTime: msg.Time,
 		})
@@ -173,7 +171,6 @@ func (r *Recipient) handlerCron(ctx context.Context, msg *entity.JobExecStatusMe
 		})
 		return r.UpdateCronJobStateAndExecInfo(ctx, &entity.JobStatus{
 			JobId:              jobId,
-			JobName:            jobName,
 			JobState:           state,
 			JobExecInformation: execInfo,
 			UpdateTime:         msg.Time,
@@ -195,7 +192,6 @@ func (r *Recipient) handlerOnce(ctx context.Context, msg *entity.JobExecStatusMe
 	}
 	jobId := msg.JobId
 	status := msg.JobState
-	jobName := msg.JobName
 
 	switch status {
 	case entity.JobSuccess:
@@ -207,7 +203,6 @@ func (r *Recipient) handlerOnce(ctx context.Context, msg *entity.JobExecStatusMe
 		}
 		return r.UpdateSuccessTimesAndState(ctx, &entity.JobStatus{
 			JobId:              jobId,
-			JobName:            jobName,
 			JobState:           status,
 			JobExecInformation: execInfo,
 			UpdateTime:         msg.Time,
@@ -221,7 +216,6 @@ func (r *Recipient) handlerOnce(ctx context.Context, msg *entity.JobExecStatusMe
 		}
 		r.UpdateJobTimesAndState(ctx, &entity.JobStatus{
 			JobId:              jobId,
-			JobName:            jobName,
 			JobState:           status,
 			JobExecInformation: execInfo,
 			UpdateTime:         msg.Time,
@@ -233,7 +227,6 @@ func (r *Recipient) handlerOnce(ctx context.Context, msg *entity.JobExecStatusMe
 		})
 		return r.UpdateJobState(ctx, &entity.JobStatus{
 			JobId:              jobId,
-			JobName:            jobName,
 			JobState:           status,
 			JobExecInformation: execInfo,
 			UpdateTime:         msg.Time,
@@ -248,7 +241,6 @@ func (r *Recipient) handlerOnce(ctx context.Context, msg *entity.JobExecStatusMe
 		})
 		return r.UpdateJobStateAndExecInfo(ctx, &entity.JobStatus{
 			JobId:              jobId,
-			JobName:            jobName,
 			JobState:           status,
 			JobExecInformation: execInfo,
 			UpdateTime:         msg.Time,
@@ -312,11 +304,11 @@ func (r *Recipient) UpdateCronJobStateAndExecInfo(ctx context.Context, job *enti
 func (r *Recipient) UpdateJobTimesAndState(ctx context.Context, job *entity.JobStatus) error {
 	n, err := storage.GetFactory().UpdateJobTimesAndState(ctx, job)
 	if err != nil {
-		log.Logger().Warn("Recipient.UpdateJobTimesAndState job_id=%s update failed cause=%s", job.JobId, job.JobName, err.Error())
+		log.Logger().Warn("Recipient.UpdateJobTimesAndState job_id=%s update failed cause=%s", job.JobId, err.Error())
 		return err
 	}
 	if n < 1 {
-		log.Logger().Warn("Recipient.UpdateJobTimesAndState job_id=%s update failed update nums=%d need nums=%d", job.JobId, job.JobName, n, 1)
+		log.Logger().Warn("Recipient.UpdateJobTimesAndState job_id=%s update failed update nums=%d need nums=%d", job.JobId, n, 1)
 	}
 	return nil
 }
@@ -324,11 +316,11 @@ func (r *Recipient) UpdateJobTimesAndState(ctx context.Context, job *entity.JobS
 func (r *Recipient) UpdateSuccessTimesAndState(ctx context.Context, job *entity.JobStatus) error {
 	n, err := storage.GetFactory().UpdateSuccessTimesAndState(ctx, job)
 	if err != nil {
-		log.Logger().Warn("Recipient.UpdateSuccessTimesAndState job_id=%s update failed cause=%s", job.JobId, job.JobName, err.Error())
+		log.Logger().Warn("Recipient.UpdateSuccessTimesAndState job_id=%s update failed cause=%s", job.JobId, err.Error())
 		return err
 	}
 	if n < 1 {
-		log.Logger().Warn("Recipient.UpdateSuccessTimesAndState job_id=%s update failed update nums=%d need nums=%d", job.JobId, job.JobName, n, 1)
+		log.Logger().Warn("Recipient.UpdateSuccessTimesAndState job_id=%s update failed update nums=%d need nums=%d", job.JobId, n, 1)
 	}
 	return nil
 }
@@ -336,11 +328,11 @@ func (r *Recipient) UpdateSuccessTimesAndState(ctx context.Context, job *entity.
 func (r *Recipient) UpdateCronSuccessTimes(ctx context.Context, job *entity.JobStatus) error {
 	n, err := storage.GetFactory().UpdateCronSuccessTimes(ctx, job)
 	if err != nil {
-		log.Logger().Warn("Recipient.UpdateCronSuccessTimes job_id=%s update failed cause=%s", job.JobId, job.JobName, err.Error())
+		log.Logger().Warn("Recipient.UpdateCronSuccessTimes job_id=%s update failed cause=%s", job.JobId, err.Error())
 		return err
 	}
 	if n < 1 {
-		log.Logger().Warn("Recipient.UpdateCronSuccessTimes job_id=%s update failed update nums=%d need nums=%d", job.JobId, job.JobName, n, 1)
+		log.Logger().Warn("Recipient.UpdateCronSuccessTimes job_id=%s update failed update nums=%d need nums=%d", job.JobId, n, 1)
 	}
 	return nil
 }
@@ -348,11 +340,11 @@ func (r *Recipient) UpdateCronSuccessTimes(ctx context.Context, job *entity.JobS
 func (r *Recipient) UpdateCronJobTimes(ctx context.Context, job *entity.JobStatus) error {
 	n, err := storage.GetFactory().UpdateCronJobTimes(ctx, job)
 	if err != nil {
-		log.Logger().Warn("Recipient.UpdateCronJobTimes job_id=%s update failed cause=%s", job.JobId, job.JobName, err.Error())
+		log.Logger().Warn("Recipient.UpdateCronJobTimes job_id=%s update failed cause=%s", job.JobId, err.Error())
 		return err
 	}
 	if n < 1 {
-		log.Logger().Warn("Recipient.UpdateCronJobTimes job_id=%s update failed update nums=%d need nums=%d", job.JobId, job.JobName, n, 1)
+		log.Logger().Warn("Recipient.UpdateCronJobTimes job_id=%s update failed update nums=%d need nums=%d", job.JobId, n, 1)
 	}
 	return nil
 }

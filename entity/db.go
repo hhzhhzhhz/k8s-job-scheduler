@@ -52,7 +52,6 @@ type CronJob struct {
 type JobStatus struct {
 	Id                 int64    `json:"id" db:"id"`
 	JobId              string   `json:"job_id" db:"job_id"`
-	JobName            string   `json:"job_name" db:"job_name"`
 	JobType            JobType  `json:"job_type" db:"job_type"`
 	JobState           JobState `json:"job_state" db:"job_state"`
 	JobTimes           int64    `json:"job_times" db:"job_times"`

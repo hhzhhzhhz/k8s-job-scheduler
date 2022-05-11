@@ -89,7 +89,6 @@ func CreateOnceJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 
 	_, err = storage.GetFactory().CreateJobStatus(ctx, &entity.JobStatus{
 		JobId:      jobId,
-		JobName:    jobc.JobName,
 		JobType:    entity.Once,
 		JobState:   entity.Submit,
 		CreateTime: now,
@@ -189,7 +188,7 @@ func UpdateOnceJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 		recipient.GetRecipient().Watch(notify)
 		select {
 		case <-notify.Watch:
-		case <-time.After(config.GetCfg().Client.OperateMaxTimeout):
+		case <-time.After(config.GetCfg().OperateMaxTimeout):
 			protocol.FailedJson(w, errors.DeleteJobTimeoutError, err.Error())
 			return
 		}
@@ -279,7 +278,7 @@ func DeleteOnceJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 	recipient.GetRecipient().Watch(notify)
 	select {
 	case <-notify.Watch:
-	case <-time.After(config.GetCfg().Client.OperateMaxTimeout):
+	case <-time.After(config.GetCfg().OperateMaxTimeout):
 		protocol.FailedJson(w, errors.DeleteJobTimeoutError, "")
 		return
 	}

@@ -13,9 +13,8 @@ type jobStatus struct {
 }
 
 func (j *jobStatus) CreateJobStatus(ctx context.Context, job *entity.JobStatus) (int64, error) {
-	res, err := db().ExecContext(ctx, "insert into job_status(job_id, job_name, job_type, job_state, create_time, update_time) values (?, ?, ?, ?, ?, ?)",
+	res, err := db().ExecContext(ctx, "insert into job_status(job_id, job_type, job_state, create_time, update_time) values (?, ?, ?, ?, ?)",
 		job.JobId,
-		job.JobName,
 		job.JobType,
 		job.JobState,
 		job.CreateTime,

@@ -80,7 +80,6 @@ func CreateCronJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 	}
 	_, err = storage.GetFactory().CreateJobStatus(ctx, &entity.JobStatus{
 		JobId:      jobId,
-		JobName:    jobn.JobName,
 		JobType:    entity.Cron,
 		JobState:   entity.Submit,
 		CreateTime: now,
@@ -158,7 +157,7 @@ func DeleteCronJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 	recipient.GetRecipient().Watch(notify)
 	select {
 	case <-notify.Watch:
-	case <-time.After(config.GetCfg().Client.OperateMaxTimeout):
+	case <-time.After(config.GetCfg().OperateMaxTimeout):
 		protocol.FailedJson(w, errors.DeleteJobTimeoutError, "")
 		return
 	}

@@ -28,6 +28,7 @@ type Config struct {
 	JobOperateTopic    string        `properties:"job_operate_topic,default=job_operate_topic"`
 	ApiTimeoutSecond   time.Duration `properties:"api_timeout_second,default=60s"`
 	LeaseLockNamespace string        `properties:"lease_lock_namespace,default=job"`
+	OperateMaxTimeout  time.Duration `properties:"operate_max_timeout,default=15s"`
 	Client             Client        `properties:"client"`
 }
 
@@ -35,7 +36,6 @@ type Client struct {
 	ID                 string        `properties:"id,default=first_id"`
 	LeaseLockNamespace string        `properties:"lease_lock_namespace,default=jobs"`
 	EventNamespace     string        `properties:"event_namespace,default="`
-	OperateMaxTimeout  time.Duration `properties:"operate_max_timeout,default=15s"`
 }
 
 var (
