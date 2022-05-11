@@ -1,6 +1,6 @@
 # Kubernetes Job Scheduler
   * Job可用于构建复杂流程业务, 如:数据迁移、数据备份、数据采集等较复杂流程业务 .
-  * 本项目可对接多个Kubernetes集群均衡分发Job及cronJob, 回调任务状态、采集运行容器运行日志 .
+  * 本项目为Job提供多个kubernetes集群中的管理功能, 其中包括Job分发、状态回调、容器日志采集等等 .
   
 ## Require
  * Go 1.17+
@@ -9,7 +9,7 @@
  * 支持k8s Job及Cron Job创建、更新、删除 .
  * 支持多个集群均衡分发Job .
  * 支持Pod容器日志采集、存储 .
- * 提供helm 一键部署脚本 .
+ * helm 一键部署脚本 .
 
 ## Documentation
 * <a href="./doc/api.markdown" alt="链接">接口文档</a>

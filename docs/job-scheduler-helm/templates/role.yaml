@@ -4,6 +4,6 @@ metadata:
   name: {{ .Values.serviceAccountName }}-cr
 rules:
   - apiGroups: ["", "batch", "coordination.k8s.io", "leases"]
-    resources: ["namespaces", "cronjobs", "jobs", "pods"]
+    resources: ["namespaces", "cronjobs", "jobs", "pods", "pods/log"]
     verbs: ["get", "list", "watch", "create", "update", "delete", "exec"]
 
