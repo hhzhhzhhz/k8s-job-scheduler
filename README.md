@@ -29,9 +29,9 @@ pprof_port = :7425                        # pprof/metrics端口 默认: 7424
 api_port = :65532                         # api端口 默认: 65532
 dsn = root:1234567@tcp(127.0.0.1:3306)/job_scheduling?charset=utf8&parseTime=True&loc=%s&readTimeout=10s&timeout=30s  # mysql
 amqp_url = amqp://guest:guest@ip:5672/    # RabbitMQ 地址
-job_push_topic = job_push_topic           # 任务topic 默认: work_job_topic
-job_status_topic = job_status_topic       # 状态消息topic 默认: status_job_topic
-job_operate_topic = job_operate_topic     # api 超时时间, 默认: 60s
+job_push_topic = job_push_topic           # 任务topic, 单播消息路由 默认: work_job_topic
+job_status_topic = job_status_topic       # 状态消息topic 单播 默认: status_job_topic
+job_operate_topic = job_operate_topic     # 删除操作使用, 该topic为广播模式
 api_timeout_second = 60s                  # 更新删除操作最大时间: 15s
 operate_max_timeout = 20s                 # 操作超时时间 删除、更新, 默认: 15s
 lease_lock_namespace = job                # 服务端选举命名空间
@@ -39,10 +39,10 @@ lease_lock_namespace = job                # 服务端选举命名空间
 [client/客户端配置]
 pprof_port = :7425                        # pprof/metrics端口 默认: 7424
 amqp_url = amqp://guest:guest@ip:5672/    # RabbitMQ 地址
-job_push_topic = job_push_topic           # 任务topic 默认: work_job_topic
-job_status_topic = job_status_topic       # 状态消息topic 默认: status_job_topic 
+job_push_topic = job_push_topic           # 任务消费topic 单播消息路由 默认: work_job_topic
+job_status_topic = job_status_topic       # 状态消息topic 单播 默认: status_job_topic 
 job_operate_topic = job_operate_topic     # 删除操作使用, 该topic为广播模式
-client.id = first_id                      # 客户端ID, 每个集群唯一
+client.id = first_id                      # 客户端ID, 每个集群唯一, 消息路由使用
 client.lease_lock_namespace = jobs        # 客户端选举使用的命名空间
 event_namespace = "xx"                    # 监听xx空间k8s job、cronjob及pod事件 默认All                  
 ```
