@@ -111,13 +111,12 @@ func (e *election) Run() {
 				},
 				OnNewLeader: func(identity string) {
 					e.mux.Lock()
+					defer e.mux.Unlock()
 					e.leaderIdentity = identity
-					e.mux.Unlock()
 					// we're notified when new leader elected
 					log.Logger().Info("Election.OnNewLeader isleader=%t leader=%s current=%s ", identity == e.identity, identity, e.identity)
 					if identity == e.identity {
 						e.once = true
-						e.mux.Lock()
 						e.leader = true
 						fs, ok := e.unmap[Leader]
 						if ok {
@@ -125,7 +124,6 @@ func (e *election) Run() {
 								fun()
 							}
 						}
-						e.mux.Unlock()
 						return
 					}
 					fs, ok := e.unmap[Follower]

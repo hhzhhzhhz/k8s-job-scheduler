@@ -1,5 +1,4 @@
-// Package infrastructure currently no free and reliable delay queue and the paid version of rocketmq can be selected conditionally
-package infrastructure
+package nsq
 
 import (
 	"fmt"

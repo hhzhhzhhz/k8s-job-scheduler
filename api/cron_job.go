@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/config"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/entity"
-	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure"
+	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/rabbitmq"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/storage"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/log"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/pkg/errors"
@@ -52,7 +52,7 @@ func CreateCronJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 		protocol.FailedJson(w, errors.AlreadyExistsError, "")
 		return
 	}
-	var delay time.Duration
+	var delay int64
 	// send to delayQueue
 	jobId := utils.UUID()
 	now := time.Now().Unix()
@@ -90,19 +90,21 @@ func CreateCronJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 		return
 	}
 	if jobn.JobExecTime > now {
-		delay = time.Duration(jobn.JobExecTime-now) * time.Second
+		delay = (jobn.JobExecTime - now) * 1000
 	}
-	err = infrastructure.GetDelayMq().DeferredPublish(
-		config.GetCfg().JobPushTopic,
-		delay,
-		&entity.JobMessage{
-			JobType:   entity.Cron,
-			JobAction: entity.Create,
-			JobId:     jobId,
-			JobName:   jobn.JobName,
-			Namespace: jobn.Namespace,
-			CronJob:   spec,
-		})
+	var route string
+	route = fmt.Sprintf("%s.random", jobn.Route)
+	if jobn.Route == "" {
+		route = fmt.Sprintf("%s.cluster", config.GetCfg().JobPushTopic)
+	}
+	err = rabbitmq.GetDelayQueue().Publish(config.GetCfg().JobPushTopic, route, delay, &entity.JobMessage{
+		JobType:   entity.Cron,
+		JobAction: entity.Create,
+		JobId:     jobId,
+		JobName:   jobn.JobName,
+		Namespace: jobn.Namespace,
+		CronJob:   spec,
+	})
 	if err != nil {
 		protocol.FailedJson(w, errors.PublishError, err.Error())
 		return
@@ -134,9 +136,7 @@ func DeleteCronJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 		protocol.FailedJson(w, errors.JobSubmittedError, fmt.Sprintf("job_id=%s submitted waiting for job to run", job.JobId))
 		return
 	}
-
-	err = infrastructure.GetDelayMq().Publish(
-		config.GetCfg().JobOperateTopic,
+	err = rabbitmq.GetCommonQueue().Publish(config.GetCfg().JobOperateTopic,
 		&entity.JobMessage{
 			JobType:   entity.Cron,
 			JobAction: entity.Delete,

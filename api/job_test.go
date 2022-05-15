@@ -202,7 +202,7 @@ func Test_Cron_Create(t *testing.T) {
 func Test_Delete_Job(t *testing.T) {
 
 	t.Run("cron_delete", func(t *testing.T) {
-		r, err := http.NewRequest("DELETE", "http://127.0.0.1:65532/api/cron_job/delete/e1326ded-6ff4-431f-8b21-f98feb8a9f6d", strings.NewReader(""))
+		r, err := http.NewRequest("DELETE", "http://127.0.0.1:65532/api/cron_job/delete/4dc1a307-13b3-4384-abf3-22db014e11ea", strings.NewReader(""))
 		if err != nil {
 			t.Error(err.Error())
 			return

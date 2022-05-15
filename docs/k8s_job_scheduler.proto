@@ -97,7 +97,7 @@ message CreateRequest {
   string image = 5;
   // 执行命令 逗号分隔命令 例: 'echo,k8s jobs !!!'
   string command = 6;
-  // 执行超时时间 指job执行时间
+  // @unrequired执行超时时间 指job执行时间
   int64 timeout = 7;
   // labels、annotations: 注解与labels
   // parallelism: 并行数 默认:1
@@ -109,8 +109,11 @@ message CreateRequest {
   // envs: 环境变量 json
   // log_collect: 是否采集日志 默认:false
   // args: 执行参数 逗号分隔
-  // callback_url: job执行状态回调地址
+  // @unrequiredcallback_url: job执行状态回调地址
   map<string, string> metadata = 4;
+  // @unrequired分发到特定集群,
+  // 值为: config.Client.ID
+  string route = 8;
 }
 
 message CreateResponse {
@@ -141,9 +144,9 @@ message UpdateRequest {
   string image = 5;
   // 执行命令 逗号分隔命令 例: 'echo,k8s jobs !!!'
   string command = 6;
-  // 执行超时时间 指job执行时间
+  // @unrequired执行超时时间 指job执行时间
   int64 timeout = 7;
-  // labels、annotations: 注解与labels
+  // @unrequired labels、annotations: 注解与labels
   // parallelism: 并行数 默认:1
   // completions: 执行成功次数 默认:1
   // restart_policy: 重启策略: 默认Never
@@ -155,6 +158,9 @@ message UpdateRequest {
   // args: 执行参数 逗号分隔
   // callback_url: job执行状态回调地址
   map<string, string> metadata = 8;
+  // @unrequired分发到特定集群,
+  // 值为: config.Client.ID
+  string route = 9;
 }
 
 message UpdateResponse {

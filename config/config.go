@@ -22,7 +22,7 @@ type Config struct {
 	PprofPort          string        `properties:"pprof_port,default=:7424"`
 	ApiPort            string        `properties:"api_port,default=:65532"`
 	Dsn                string        `properties:"dsn,default=root:1234567@tcp(127.0.0.1:3306)/job_scheduling?charset=utf8&parseTime=True&loc=%s&readTimeout=10s&timeout=30s"`
-	MQaddr             string        `properties:"mq_addrs,default=127.0.0.1:4161"`
+	AmqpUrl            string        `properties:"amqp_url,default=amqp://guest:guest@127.0.0.1:5672/"`
 	JobPushTopic       string        `properties:"job_push_topic,default=job_push_topic"`
 	JobStatusTopic     string        `properties:"job_status_topic,default=job_status_topic"`
 	JobOperateTopic    string        `properties:"job_operate_topic,default=job_operate_topic"`
@@ -33,9 +33,9 @@ type Config struct {
 }
 
 type Client struct {
-	ID                 string        `properties:"id,default=first_id"`
-	LeaseLockNamespace string        `properties:"lease_lock_namespace,default=jobs"`
-	EventNamespace     string        `properties:"event_namespace,default="`
+	ID                 string `properties:"id,default=first_id"`
+	LeaseLockNamespace string `properties:"lease_lock_namespace,default=jobs"`
+	EventNamespace     string `properties:"event_namespace,default="`
 }
 
 var (

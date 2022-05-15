@@ -9,12 +9,12 @@ import (
 	"github.com/hhzhhzhhz/k8s-job-scheduler/deploy"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/election"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/entity"
-	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure"
+	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/rabbitmq"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/log"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/pkg/constant"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/pkg/utils"
 	json "github.com/json-iterator/go"
-	"github.com/nsqio/go-nsq"
+	"github.com/streadway/amqp"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"runtime"
@@ -25,16 +25,17 @@ const (
 	defaultRetryTimes = 3
 )
 
-func NewExcellent(ctx context.Context, mq infrastructure.Delaymq, api apiserver.Apiserver, election election.Election, cfg *config.Config) *Excellent {
+func NewExcellent(ctx context.Context, delay rabbitmq.DelayQueue, common rabbitmq.CommonQueue, api apiserver.Apiserver, election election.Election, cfg *config.Config) *Excellent {
 	ctx, cancel := context.WithCancel(ctx)
 	return &Excellent{
 		ctx:      ctx,
 		cancel:   cancel,
 		cfg:      cfg,
-		mq:       mq,
+		delayMq:  delay,
+		commonMq: common,
 		election: election,
-		collect:  deploy.NewCollect(ctx, api, mq),
-		deploy:   deploy.NewJobDeploy(mq, api, cfg.JobStatusTopic),
+		collect:  deploy.NewCollect(ctx, api, common),
+		deploy:   deploy.NewJobDeploy(common, api, cfg.JobStatusTopic),
 		event:    apiserver.NewKubeEvent(ctx, api),
 		cache:    utils.NewDeduplication(),
 	}
@@ -46,7 +47,8 @@ type Excellent struct {
 	cfg      *config.Config
 	mux      sync.Mutex
 	sw       utils.WaitGroupWrapper
-	mq       infrastructure.Delaymq
+	delayMq  rabbitmq.DelayQueue
+	commonMq rabbitmq.CommonQueue
 	deploy   deploy.JobDeploy
 	event    apiserver.KubeEvent
 	election election.Election
@@ -57,12 +59,20 @@ type Excellent struct {
 // Run Excellent start
 func (e *Excellent) Run() error {
 	var err error
-	if err = e.mq.Subscription(e.cfg.JobOperateTopic, e.cfg.Client.ID, infrastructure.NewEmptyHandler(e.runningJobHandler)); err != nil {
+	warpC := rabbitmq.NewHandlerWrapper(e.runningJobHandler)
+	if err = e.commonMq.Subscription(e.cfg.JobOperateTopic, e.cfg.JobOperateTopic, warpC.HandlerWrap); err != nil {
 		return err
 	}
 	topic := e.cfg.JobPushTopic
-	if err = e.mq.Subscription(topic, topic, infrastructure.NewEmptyHandler(e.createJobHandler)); err != nil {
-		return err
+	// 订阅指定路由数据,单播
+	warpRouterDelay := rabbitmq.NewHandlerWrapper(e.createJobHandler)
+	if err = e.delayMq.Subscription(topic, e.cfg.Client.ID, []string{fmt.Sprintf("%s.*", e.cfg.Client.ID)}, warpRouterDelay.HandlerWrap); err != nil {
+		return fmt.Errorf("delayMq.Subscription cause=%s", err.Error())
+	}
+	// 订阅无路由数据,单播
+	warpD := rabbitmq.NewHandlerWrapper(e.createJobHandler)
+	if err = e.delayMq.Subscription(topic, topic, []string{fmt.Sprintf("%s.*", topic)}, warpD.HandlerWrap); err != nil {
+		return fmt.Errorf("delayMq.Subscription cause=%s", err.Error())
 	}
 	e.election.Register(election.Leader, func() {
 		log.Logger().Info("Subscribe k8s events namespace=%s", utils.NameSpace(e.cfg.Client.EventNamespace))
@@ -181,7 +191,7 @@ func (e *Excellent) cronJobEvent(event *apiserver.Event) {
 		Time:               job.CreationTimestamp.Time.Unix(),
 		JobExecInformation: map[string]string{"failure": ""},
 	}
-	e.mq.RetryPublish(topic, message)
+	e.commonMq.Publish(topic, message)
 }
 
 // jobEvent handler job event
@@ -224,7 +234,7 @@ func (e *Excellent) jobEvent(event *apiserver.Event) {
 	if jobType == constant.LabelTypeCron {
 		parent = entity.Cron
 	}
-	e.mq.RetryPublish(topic, &entity.JobExecStatusMessage{
+	e.commonMq.Publish(topic, &entity.JobExecStatusMessage{
 		JobType:            entity.Once,
 		JobState:           state,
 		JobId:              jobId,
@@ -303,7 +313,7 @@ func (e *Excellent) ParseJobState(t apiserver.EventType, jobType string, cs []v1
 
 // ------- Job
 // createJobHandler handler job create
-func (e *Excellent) createJobHandler(msg *nsq.Message) error {
+func (e *Excellent) createJobHandler(msg *amqp.Delivery) error {
 	job := &entity.JobMessage{}
 	if err := json.Unmarshal(msg.Body, job); err != nil {
 		log.Logger().Warn("Excellent.JobReceiver Unmarshal failed cause=%s msg=%s", err.Error(), string(msg.Body))
@@ -317,6 +327,7 @@ func (e *Excellent) createJobHandler(msg *nsq.Message) error {
 		}
 	}()
 	if job.JobAction == entity.Create {
+		log.Logger().Info("Excellent.CreateJobHandler receive job_id=%s", job.JobId)
 		switch job.JobType {
 		case entity.Once:
 			return e.deploy.CreateOnceJob(job)
@@ -330,7 +341,7 @@ func (e *Excellent) createJobHandler(msg *nsq.Message) error {
 
 // ----------- running job
 // runningJobHandler handler job delete
-func (e *Excellent) runningJobHandler(msg *nsq.Message) error {
+func (e *Excellent) runningJobHandler(msg *amqp.Delivery) error {
 	job := &entity.JobMessage{}
 	if err := json.Unmarshal(msg.Body, job); err != nil {
 		log.Logger().Warn("Excellent.JobReceiver Unmarshal failed cause=%s msg=%s", err.Error(), string(msg.Body))

@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/apiserver"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/entity"
-	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure"
+	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/rabbitmq"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/log"
 	errorsv1 "k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +20,7 @@ type JobDeploy interface {
 	DeleteCronJob(job *entity.JobMessage) error
 }
 
-func NewJobDeploy(mq infrastructure.Delaymq, api apiserver.Apiserver, topic string) JobDeploy {
+func NewJobDeploy(mq rabbitmq.CommonQueue, api apiserver.Apiserver, topic string) JobDeploy {
 	return &jobDeploy{
 		mq:          mq,
 		api:         api,
@@ -30,7 +30,7 @@ func NewJobDeploy(mq infrastructure.Delaymq, api apiserver.Apiserver, topic stri
 
 type jobDeploy struct {
 	api         apiserver.Apiserver
-	mq          infrastructure.Delaymq
+	mq          rabbitmq.CommonQueue
 	noticeTopic string
 }
 

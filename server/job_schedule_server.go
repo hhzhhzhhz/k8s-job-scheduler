@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/config"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/election"
-	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/kubernetes"
+	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/rabbitmq"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/storage"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/log"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/pkg/protocol"
@@ -39,7 +39,7 @@ func (s *JobScheduleServer) Init() error {
 		return fmt.Errorf("JobScheduleServer.InitMysql InitMysql failed cause=%s", err.Error())
 	}
 	var err error
-	if err = infrastructure.InitDelaymq(config.GetCfg().MQaddr); err != nil {
+	if err = rabbitmq.InitRabbitMq(config.GetCfg().AmqpUrl); err != nil {
 		return fmt.Errorf("JobScheduleServer.InitDelayQueueProducer failed cause=%s", err.Error())
 	}
 	tcpAddr, err := net.ResolveTCPAddr("tcp", config.GetCfg().ApiPort)
@@ -53,7 +53,7 @@ func (s *JobScheduleServer) Init() error {
 	s.identity = fmt.Sprintf("%s:%d", ip, tcpAddr.Port)
 	election := election.NewElection(s.ctx, s.identity, kubernetes.KubernetesClient(), config.GetCfg().LeaseLockNamespace)
 	s.election = election
-	s.recipient = recipient.NewRecipient(s.ctx, infrastructure.GetDelayMq(), election, config.GetCfg())
+	s.recipient = recipient.NewRecipient(s.ctx, rabbitmq.GetCommonQueue(), election, config.GetCfg())
 
 	return err
 }
@@ -89,7 +89,7 @@ func (s *JobScheduleServer) Stop() error {
 	errs = multierr.Append(errs, s.recipient.Close())
 	errs = multierr.Append(errs, s.election.Close())
 	errs = multierr.Append(errs, storage.Close())
-	errs = multierr.Append(errs, infrastructure.GetDelayMq().Close())
+	errs = multierr.Append(errs, rabbitmq.Close())
 	log.Logger().Info("server is closed")
 	log.Logger().Close()
 	return errs

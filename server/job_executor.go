@@ -7,8 +7,8 @@ import (
 	"github.com/hhzhhzhhz/k8s-job-scheduler/client"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/config"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/election"
-	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/kubernetes"
+	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/rabbitmq"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/storage"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/log"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/pkg/protocol"
@@ -42,13 +42,13 @@ func (j *JobExecutor) Init() error {
 		return fmt.Errorf("JobExecutor.InitMysql InitMysql failed cause: %s", err.Error())
 	}
 	var err error
-	if err = infrastructure.InitDelaymq(config.GetCfg().MQaddr); err != nil {
+	if err = rabbitmq.InitRabbitMq(config.GetCfg().AmqpUrl); err != nil {
 		return fmt.Errorf("JobExecutor.InitDelayQueueProducer failed cause: %s", err.Error())
 	}
 	api := apiserver.NewApiserver(kubernetes.KubernetesClient())
 	election := election.NewElection(j.ctx, "", kubernetes.KubernetesClient(), config.GetCfg().Client.LeaseLockNamespace)
 	j.election = election
-	ecli := client.NewExcellent(j.ctx, infrastructure.GetDelayMq(), api, j.election, config.GetCfg())
+	ecli := client.NewExcellent(j.ctx, rabbitmq.GetDelayQueue(), rabbitmq.GetCommonQueue(), api, j.election, config.GetCfg())
 	j.exec = ecli
 	return err
 }
@@ -71,7 +71,7 @@ func (j *JobExecutor) Stop() error {
 	errs = multierr.Append(errs, j.exec.Close())
 	errs = multierr.Append(errs, j.election.Close())
 	errs = multierr.Append(errs, storage.Close())
-	errs = multierr.Append(errs, infrastructure.GetDelayMq().Close())
+	errs = multierr.Append(errs, rabbitmq.Close())
 	log.Logger().Info("server is closed")
 	log.Logger().Close()
 	return errs

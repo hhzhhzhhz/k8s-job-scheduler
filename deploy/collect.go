@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/apiserver"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/entity"
-	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure"
+	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/rabbitmq"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/log"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/pkg/utils"
 	"io"
@@ -57,7 +57,7 @@ type Collect interface {
 	Close() error
 }
 
-func NewCollect(ctx context.Context, api apiserver.Apiserver, mq infrastructure.Delaymq) Collect {
+func NewCollect(ctx context.Context, api apiserver.Apiserver, mq rabbitmq.CommonQueue) Collect {
 	ctx, cancel := context.WithCancel(ctx)
 	col := &collect{
 		ctx:      ctx,
@@ -77,7 +77,7 @@ type collect struct {
 	mux      sync.Mutex
 	api      apiserver.Apiserver
 	sw       utils.WaitGroupWrapper
-	mq       infrastructure.Delaymq
+	mq       rabbitmq.CommonQueue
 	pods     map[string]*WorkInfo
 	rotation time.Duration
 }

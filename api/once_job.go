@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/config"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/entity"
-	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure"
+	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/rabbitmq"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/storage"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/log"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/pkg/errors"
@@ -59,7 +59,7 @@ func CreateOnceJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 		return
 	}
 	var jobId string
-	var delay time.Duration
+	var delay int64
 	// send to delayQueue
 	jobId = utils.UUID()
 	now := time.Now().Unix()
@@ -100,11 +100,14 @@ func CreateOnceJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 	}
 
 	if jobc.JobExecTime > now {
-		delay = time.Duration(jobc.JobExecTime-now) * time.Second
+		delay = (jobc.JobExecTime - now) * 1000
 	}
-	err = infrastructure.GetDelayMq().DeferredPublish(
-		config.GetCfg().JobPushTopic,
-		delay,
+	var route string
+	route = fmt.Sprintf("%s.random", jobc.Route)
+	if jobc.Route == "" {
+		route = fmt.Sprintf("%s.cluster", config.GetCfg().JobPushTopic)
+	}
+	err = rabbitmq.GetDelayQueue().Publish(config.GetCfg().JobPushTopic, route, delay,
 		&entity.JobMessage{
 			JobType:   entity.Once,
 			JobAction: entity.Create,
@@ -145,7 +148,7 @@ func UpdateOnceJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 		protocol.FailedJson(w, errors.SqlQueryError, err.Error())
 		return
 	}
-	var delay time.Duration
+	var delay int64
 	now := time.Now().Unix()
 	jobName := jobdb.JobName
 	spec, err := utils.GenOnceJob(&entity.CreateOnceJob{
@@ -166,7 +169,7 @@ func UpdateOnceJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 		protocol.FailedJson(w, errors.JobSubmittedError, fmt.Sprintf("job_name=%s job_status=%d submitted waiting for job to run", jobName, jobdb.JobState))
 		return
 	case entity.CreateSuccess, entity.Failed, entity.JobSuccess:
-		err = infrastructure.GetDelayMq().Publish(
+		err = rabbitmq.GetCommonQueue().Publish(
 			config.GetCfg().JobOperateTopic,
 			&entity.JobMessage{
 				JobType:   entity.Once,
@@ -198,7 +201,7 @@ func UpdateOnceJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 		}
 	}
 	if jobup.JobExecTime > now {
-		delay = time.Duration(jobup.JobExecTime-now) * time.Second
+		delay = (jobup.JobExecTime - now) * 1000
 	}
 	topic := config.GetCfg().JobPushTopic
 	// create work tasks
@@ -221,7 +224,12 @@ func UpdateOnceJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 		protocol.FailedJson(w, errors.SqlUpdateError, err.Error())
 		return
 	}
-	err = infrastructure.GetDelayMq().DeferredPublish(topic, delay, &entity.JobMessage{
+	var route string
+	route = fmt.Sprintf("%s.random", jobup.Route)
+	if jobup.Route == "" {
+		route = fmt.Sprintf("%s.cluster", config.GetCfg().JobPushTopic)
+	}
+	err = rabbitmq.GetDelayQueue().Publish(topic, route, delay, &entity.JobMessage{
 		JobType:   entity.Once,
 		JobAction: entity.Create,
 		JobId:     jobId,
@@ -256,7 +264,7 @@ func DeleteOnceJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) 
 		protocol.FailedJson(w, errors.DeleteJobError, fmt.Sprintf("job_id=%s submitted waiting for job to run", job.JobId))
 		return
 	}
-	err = infrastructure.GetDelayMq().Publish(
+	err = rabbitmq.GetCommonQueue().Publish(
 		config.GetCfg().JobOperateTopic,
 		&entity.JobMessage{
 			JobType:   entity.Once,

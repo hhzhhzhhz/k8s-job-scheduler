@@ -9,6 +9,7 @@ type CreateOnceJob struct {
 	Command     string            `json:"command"`
 	Timeout     int64             `json:"timeout"`
 	JobId       string            `json:"-"`
+	Route       string            `json:"route"`
 }
 
 type UpdateOnceJob struct {
@@ -19,6 +20,7 @@ type UpdateOnceJob struct {
 	Image       string            `json:"image"`
 	Command     string            `json:"command"`
 	Timeout     int64             `json:"timeout"`
+	Route       string            `json:"route"`
 }
 
 type PageOnceJob struct {
@@ -45,6 +47,7 @@ type CreateCronJob struct {
 	Command     string            `json:"command"`
 	Timeout     int64             `json:"timeout"`
 	JobId       string            `json:"-"`
+	Route       string            `json:"route"`
 }
 
 type UpdateCronJob struct {
@@ -56,6 +59,7 @@ type UpdateCronJob struct {
 	Image       string            `json:"image"`
 	Command     string            `json:"command"`
 	Timeout     int               `json:"timeout"`
+	Route       string            `json:"route"`
 }
 
 type JobCreateSuccess struct {

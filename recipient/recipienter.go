@@ -5,12 +5,12 @@ import (
 	"github.com/hhzhhzhhz/k8s-job-scheduler/config"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/election"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/entity"
-	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure"
+	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/rabbitmq"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/infrastructure/storage"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/log"
 	"github.com/hhzhhzhhz/k8s-job-scheduler/pkg/utils"
 	json "github.com/json-iterator/go"
-	"github.com/nsqio/go-nsq"
+	"github.com/streadway/amqp"
 	"sync"
 	"time"
 )
@@ -28,7 +28,7 @@ func GetRecipient() *Recipient {
 	return recipient
 }
 
-func NewRecipient(ctx context.Context, mq infrastructure.Delaymq, election election.Election, cfg *config.Config) *Recipient {
+func NewRecipient(ctx context.Context, mq rabbitmq.CommonQueue, election election.Election, cfg *config.Config) *Recipient {
 	ctx, cancel := context.WithCancel(ctx)
 	recipient = &Recipient{
 		ctx:      ctx,
@@ -47,7 +47,7 @@ type Recipient struct {
 	mux      sync.Mutex
 	ctx      context.Context
 	cancel   context.CancelFunc
-	mq       infrastructure.Delaymq
+	mq       rabbitmq.CommonQueue
 	election election.Election
 	waiter   utils.Waiter
 	logBuf   []*entity.JobLogs
@@ -72,7 +72,8 @@ func (r *Recipient) Run() {
 func (r *Recipient) SubscribeJobStatus(jobStatusTopic string) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
-	return r.mq.Subscription(jobStatusTopic, jobStatusTopic, infrastructure.NewEmptyHandler(r.JobStatusReceive))
+	wrap := rabbitmq.NewHandlerWrapper(r.JobStatusReceive)
+	return r.mq.Subscription(jobStatusTopic, jobStatusTopic, wrap.HandlerWrap)
 }
 
 func (r *Recipient) Watch(watch *utils.WaiterMessage) {
@@ -80,7 +81,7 @@ func (r *Recipient) Watch(watch *utils.WaiterMessage) {
 }
 
 // JobStatusReceive handler client return info
-func (r *Recipient) JobStatusReceive(msg *nsq.Message) error {
+func (r *Recipient) JobStatusReceive(msg *amqp.Delivery) error {
 	ctx, _ := context.WithTimeout(context.Background(), defaultHandlerTimeout)
 	statusMessage := &entity.JobExecStatusMessage{}
 
