@@ -8,9 +8,10 @@
  * mysql
 
 ## Features
- * 支持Job均衡分发多个集群及特定集群 .
- * 支持k8s Job及CronJob创建、更新、删除 .
- * Job执行状态回调、日志采集等 .
+ * 支持多个集群均衡分发 .
+ * 支持指定集群分发 .
+ * 支持Job及CronJob创建、更新、删除 .
+ * 支持Job执行状态更新、回调及日志采集等 .
  * Helm一键部署 .
 
 ## Documentation
@@ -38,12 +39,12 @@ lease_lock_namespace = job                # 服务端选举命名空间
 [client/客户端配置]
 pprof_port = :7425                        # pprof/metrics端口 默认: 7424
 amqp_url = amqp://guest:guest@ip:5672/    # RabbitMQ 地址
-job_push_topic = job_push_topic          # 任务topic 默认: work_job_topic
-job_status_topic = job_status_topic      # 状态消息topic 默认: status_job_topic 
-job_operate_topic = job_operate_topic    # 删除操作使用, 该topic为广播模式
-client.id = first_id                     # 客户端ID, 每个集群唯一
-client.lease_lock_namespace = jobs       # 客户端选举使用的命名空间
-event_namespace = "xx"                   # 监听xx空间k8s job、cronjob及pod事件 默认All                  
+job_push_topic = job_push_topic           # 任务topic 默认: work_job_topic
+job_status_topic = job_status_topic       # 状态消息topic 默认: status_job_topic 
+job_operate_topic = job_operate_topic     # 删除操作使用, 该topic为广播模式
+client.id = first_id                      # 客户端ID, 每个集群唯一
+client.lease_lock_namespace = jobs        # 客户端选举使用的命名空间
+event_namespace = "xx"                    # 监听xx空间k8s job、cronjob及pod事件 默认All                  
 ```
 
 ## 注意事项
